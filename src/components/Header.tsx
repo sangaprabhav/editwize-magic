@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/authContext';
 import AnimatedTransition from './AnimatedTransition';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X, Upload, Film } from 'lucide-react';
 
 const Header: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -53,7 +53,7 @@ const Header: React.FC = () => {
               {isAuthenticated && (
                 <>
                   <NavLink to="/dashboard" label="Dashboard" currentPath={location.pathname} />
-                  <NavLink to="/videos" label="My Videos" currentPath={location.pathname} />
+                  <NavLink to="/library" label="My Videos" currentPath={location.pathname} />
                 </>
               )}
             </nav>
@@ -62,10 +62,11 @@ const Header: React.FC = () => {
               {isAuthenticated ? (
                 <div className="flex items-center gap-4">
                   <Link 
-                    to="/editor" 
-                    className="bg-primary text-primary-foreground px-5 py-2 rounded-full button-hover"
+                    to="/upload" 
+                    className="bg-primary text-primary-foreground px-5 py-2 rounded-full button-hover flex items-center gap-2"
                   >
-                    New Edit
+                    <Upload size={16} />
+                    <span>New Video</span>
                   </Link>
                   
                   <div className="flex items-center gap-3">
@@ -126,7 +127,7 @@ const Header: React.FC = () => {
             {isAuthenticated && (
               <>
                 <MobileNavLink to="/dashboard" label="Dashboard" onClick={() => setMobileMenuOpen(false)} />
-                <MobileNavLink to="/videos" label="My Videos" onClick={() => setMobileMenuOpen(false)} />
+                <MobileNavLink to="/library" label="My Videos" onClick={() => setMobileMenuOpen(false)} />
               </>
             )}
           </nav>
@@ -135,11 +136,12 @@ const Header: React.FC = () => {
             {isAuthenticated ? (
               <>
                 <Link 
-                  to="/editor"
-                  className="w-full bg-primary text-primary-foreground text-center px-5 py-3 rounded-xl button-hover"
+                  to="/upload"
+                  className="w-full bg-primary text-primary-foreground text-center px-5 py-3 rounded-xl button-hover flex items-center justify-center gap-2"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  New Edit
+                  <Upload size={18} />
+                  <span>Upload Video</span>
                 </Link>
                 <button 
                   onClick={() => {

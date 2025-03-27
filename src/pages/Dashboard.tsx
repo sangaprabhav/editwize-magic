@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/authContext';
 import Header from '@/components/Header';
 import AnimatedTransition from '@/components/AnimatedTransition';
-import { Plus, Film, Clock, Image, Play, MoreVertical } from 'lucide-react';
+import { Plus, Film, Upload, Camera, Play, MoreVertical } from 'lucide-react';
 import { Video, getMockVideos, formatDate, formatDuration } from '@/types';
 
 const Dashboard = () => {
@@ -13,7 +13,7 @@ const Dashboard = () => {
   
   useEffect(() => {
     // Load mock videos data
-    setRecentVideos(getMockVideos());
+    setRecentVideos(getMockVideos().slice(0, 3)); // Only show 3 most recent
   }, []);
   
   return (
@@ -29,21 +29,31 @@ const Dashboard = () => {
         </AnimatedTransition>
         
         <AnimatedTransition delay={200}>
-          <section className="mb-12">
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
             <Link 
-              to="/editor" 
-              className="block glass-card p-8 text-center hover:shadow-xl transition-all duration-300 border border-border/50"
+              to="/upload" 
+              className="block glass-card p-6 text-center hover:shadow-xl transition-all duration-300 border border-border/50"
             >
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6">
-                <Plus className="w-8 h-8 text-primary" />
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                <Upload className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-2xl font-medium mb-3">New Video Edit</h2>
-              <p className="text-muted-foreground max-w-lg mx-auto mb-6">
-                Upload a video or record directly in the app, then use AI to transform it with simple text prompts
+              <h2 className="text-xl font-medium mb-2">Upload Video</h2>
+              <p className="text-muted-foreground max-w-sm mx-auto mb-4">
+                Upload a video from your device and transform it with AI
               </p>
-              <button className="bg-primary text-primary-foreground px-6 py-3 rounded-xl button-hover">
-                Start New Project
-              </button>
+            </Link>
+            
+            <Link 
+              to="/upload?tab=record" 
+              className="block glass-card p-6 text-center hover:shadow-xl transition-all duration-300 border border-border/50"
+            >
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                <Camera className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-medium mb-2">Record Video</h2>
+              <p className="text-muted-foreground max-w-sm mx-auto mb-4">
+                Record directly in the app using your camera
+              </p>
             </Link>
           </section>
         </AnimatedTransition>
@@ -52,7 +62,7 @@ const Dashboard = () => {
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-medium">Recent Projects</h2>
-              <Link to="/videos" className="text-primary hover:underline">
+              <Link to="/library" className="text-primary hover:underline">
                 View all
               </Link>
             </div>
@@ -71,7 +81,7 @@ const Dashboard = () => {
                   Start by creating your first AI-powered video edit
                 </p>
                 <Link 
-                  to="/editor" 
+                  to="/upload" 
                   className="bg-primary text-primary-foreground px-5 py-2 rounded-full inline-flex items-center gap-2 button-hover"
                 >
                   <Plus size={18} />
@@ -107,8 +117,15 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, index }) => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
             <div className="flex items-center gap-2 text-white text-sm">
-              <Clock size={14} />
               <span>{formatDuration(mockDuration)}</span>
+              <span className="w-1 h-1 rounded-full bg-white/70"></span>
+              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                video.status === 'Ready' ? 'bg-green-500/70' :
+                video.status === 'Processing' ? 'bg-yellow-500/70' :
+                'bg-blue-500/70'
+              }`}>
+                {video.status}
+              </span>
             </div>
           </div>
           <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/30 transition-opacity">
