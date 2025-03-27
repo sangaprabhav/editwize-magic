@@ -1,18 +1,23 @@
 
 import React from 'react';
 import { Progress } from "@/components/ui/progress";
-import { Loader2 } from 'lucide-react';
+import { Loader2, XCircle, CheckCircle } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface VideoProgressProps {
   status: 'Uploading' | 'Processing' | 'Analyzing' | 'Completed' | 'Error';
   progress?: number; // 0-100
   message?: string;
+  onCancel?: () => void;
+  onRetry?: () => void;
 }
 
 const VideoProgress: React.FC<VideoProgressProps> = ({ 
   status, 
   progress = 0, 
-  message 
+  message,
+  onCancel,
+  onRetry
 }) => {
   // Default messages based on status
   const defaultMessages = {
@@ -42,14 +47,18 @@ const VideoProgress: React.FC<VideoProgressProps> = ({
     <div className="w-full bg-muted/20 rounded-xl p-6 text-center">
       {/* Status indicator */}
       <div className="flex justify-between mb-2 text-sm font-medium">
-        <div className={`flex items-center gap-2 ${status === 'Error' ? 'text-destructive' : 'text-primary'}`}>
-          {status !== 'Completed' && status !== 'Error' && (
+        <div className={`flex items-center gap-2 ${status === 'Error' ? 'text-destructive' : status === 'Completed' ? 'text-green-500' : 'text-primary'}`}>
+          {status === 'Completed' ? (
+            <CheckCircle className="w-4 h-4" />
+          ) : status === 'Error' ? (
+            <XCircle className="w-4 h-4" />
+          ) : (
             <Loader2 className="w-4 h-4 animate-spin" />
           )}
           <span>{status}</span>
         </div>
         
-        {!isIndeterminate && (
+        {!isIndeterminate && status !== 'Completed' && status !== 'Error' && (
           <span>{progress}%</span>
         )}
       </div>
@@ -57,13 +66,28 @@ const VideoProgress: React.FC<VideoProgressProps> = ({
       {/* Progress bar */}
       <Progress 
         value={isIndeterminate ? statusCompletion[status] : progress}
-        className={`h-2 mb-4 ${status === 'Error' ? 'bg-destructive/20' : ''}`}
+        className={`h-2 mb-4 ${status === 'Error' ? 'bg-destructive/20' : status === 'Completed' ? 'bg-green-500/20' : ''}`}
       />
       
       {/* Message */}
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground mb-4">
         {displayMessage}
       </p>
+      
+      {/* Action buttons */}
+      <div className="flex justify-center gap-3">
+        {(status === 'Uploading' || status === 'Processing' || status === 'Analyzing') && onCancel && (
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+        
+        {status === 'Error' && onRetry && (
+          <Button variant="default" size="sm" onClick={onRetry}>
+            Retry
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

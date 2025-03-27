@@ -6,6 +6,11 @@ import {
   VideoProcessResponse,
   EditRequest
 } from '@/types';
+import { 
+  showProcessingNotification,
+  showEditCompleteNotification,
+  showErrorNotification 
+} from '@/utils/notifications';
 
 // Base API URL - would be set from environment in a real app
 const API_BASE_URL = '/api';
@@ -14,43 +19,8 @@ const API_BASE_URL = '/api';
  * Send a request to the AI agent for video editing suggestions
  */
 export const requestAIEdit = async (request: AIEditRequest): Promise<AIEditResponse> => {
-  // For development/demo purposes, this function returns a mock response
-  // In production, this would make an actual API call
-  
   console.log('Sending AI edit request:', request);
   
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Mock successful response
-  return {
-    status: 'success',
-    editPlan: {
-      effects: [
-        {
-          type: 'text',
-          startTime: 0,
-          endTime: 5,
-          parameters: {
-            text: 'Added caption based on prompt: ' + request.prompt,
-            position: 'bottom',
-            fontSize: 24,
-            color: '#ffffff'
-          }
-        },
-        {
-          type: 'filter',
-          parameters: {
-            name: 'brightness',
-            value: 1.2
-          }
-        }
-      ]
-    }
-  };
-  
-  // In production, use this code instead:
-  /*
   try {
     const response = await fetch(`${API_BASE_URL}/video/aiEdit`, {
       method: 'POST',
@@ -72,29 +42,14 @@ export const requestAIEdit = async (request: AIEditRequest): Promise<AIEditRespo
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
-  */
 };
 
 /**
  * Process a video using the edit plan provided by the AI
  */
 export const processVideoEdit = async (request: VideoProcessRequest): Promise<VideoProcessResponse> => {
-  // For development/demo purposes, this function returns a mock response
-  // In production, this would make an actual API call
-  
   console.log('Processing video edit:', request);
   
-  // Simulate processing delay
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  
-  // Mock successful response - returns the same video URL for demo
-  return {
-    status: 'success',
-    editedVideoUrl: request.videoFileUrl
-  };
-  
-  // In production, use this code instead:
-  /*
   try {
     const response = await fetch(`${API_BASE_URL}/video/processEdits`, {
       method: 'POST',
@@ -116,7 +71,6 @@ export const processVideoEdit = async (request: VideoProcessRequest): Promise<Vi
       message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
-  */
 };
 
 /**
@@ -141,6 +95,9 @@ export const handleEditRequest = async (
   };
   
   try {
+    // Display processing notification
+    showProcessingNotification();
+    
     // 2. Send request to AI agent
     const aiResponse = await requestAIEdit({
       prompt: editRequest.promptText,
@@ -168,6 +125,9 @@ export const handleEditRequest = async (
     // 5. Mark the edit request as completed
     newEditRequest.status = 'Completed';
     
+    // Show completion notification
+    showEditCompleteNotification();
+    
     // 6. Return the updated edit request and the processed video URL
     return {
       editRequest: newEditRequest,
@@ -178,9 +138,12 @@ export const handleEditRequest = async (
     newEditRequest.status = 'Error';
     console.error('Edit request processing failed:', error);
     
+    // Show error notification
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    showErrorNotification(errorMessage);
+    
     return {
       editRequest: newEditRequest
     };
   }
 };
-

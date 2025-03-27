@@ -1,4 +1,3 @@
-
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -59,5 +58,35 @@ export const showShareNotification = () => {
   toast({
     title: "Video shared",
     description: "Your video link has been copied to clipboard",
+  });
+};
+
+/**
+ * Show a notification for a cancelled process
+ */
+export const showCancelNotification = () => {
+  toast({
+    title: "Operation cancelled",
+    description: "The current operation was cancelled",
+  });
+};
+
+/**
+ * Show a notification for a pending AI response
+ */
+export const showPendingNotification = () => {
+  toast({
+    title: "Waiting for AI",
+    description: "The AI is processing your request. This may take a moment.",
+  });
+};
+
+/**
+ * Show a notification for an update
+ */
+export const showUpdateNotification = (message: string) => {
+  toast({
+    title: "Update",
+    description: message,
   });
 };
