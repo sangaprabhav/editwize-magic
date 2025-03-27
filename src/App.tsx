@@ -13,6 +13,7 @@ import VideoEditor from "./pages/VideoEditor";
 import Library from "./pages/Library";
 import VideoUpload from "./pages/VideoUpload";
 import Share from "./pages/Share";
+import Videos from "./pages/Videos";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/editor/:id" element={<VideoEditor />} />
             <Route path="/upload" element={<VideoUpload />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/videos" element={<Videos />} />
             <Route path="/share/:id" element={<Share />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

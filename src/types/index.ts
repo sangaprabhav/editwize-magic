@@ -40,6 +40,41 @@ export interface EditRequest {
   status: EditRequestStatus;
 }
 
+// AI Edit Request interface for API calls
+export interface AIEditRequest {
+  prompt: string;
+  videoId: string;
+  conversationHistory?: Array<{ prompt: string; timestamp: Date }>;
+}
+
+// AI Edit Response interface for API responses
+export interface AIEditResponse {
+  status: 'success' | 'error';
+  message?: string;
+  editPlan?: {
+    // This would contain the structured editing instructions
+    effects: Array<{
+      type: string;
+      startTime?: number;
+      endTime?: number;
+      parameters?: Record<string, any>;
+    }>;
+  };
+}
+
+// Video Processing Request interface
+export interface VideoProcessRequest {
+  videoFileUrl: string;
+  editPlan: any; // The edit plan from the AI response
+}
+
+// Video Processing Response interface
+export interface VideoProcessResponse {
+  status: 'success' | 'error';
+  message?: string;
+  editedVideoUrl?: string;
+}
+
 // Mock data service for videos (to be replaced with actual API calls)
 export const getMockVideos = (): Video[] => {
   return [
