@@ -22,10 +22,10 @@ const VideoProgress: React.FC<VideoProgressProps> = ({
   // Default messages based on status
   const defaultMessages = {
     Uploading: 'Uploading your video...',
-    Processing: 'Processing your video with AI...',
-    Analyzing: 'Analyzing video content...',
-    Completed: 'Processing complete!',
-    Error: 'An error occurred during processing'
+    Processing: 'Processing your video with GPT-4o...',
+    Analyzing: 'GPT-4o is analyzing your video content...',
+    Completed: 'GPT-4o processing complete!',
+    Error: 'An error occurred during GPT-4o processing'
   };
 
   // Use provided message or fall back to default

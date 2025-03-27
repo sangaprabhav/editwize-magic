@@ -16,7 +16,7 @@ export const showUploadNotification = (title?: string) => {
 export const showProcessingNotification = () => {
   toast({
     title: "Processing video",
-    description: "Your video is being processed with AI",
+    description: "Your video is being processed with GPT-4o",
   });
 };
 
@@ -26,7 +26,7 @@ export const showProcessingNotification = () => {
 export const showEditCompleteNotification = () => {
   toast({
     title: "Edit complete",
-    description: "Your video has been processed with AI",
+    description: "Your video has been processed with GPT-4o",
   });
 };
 
