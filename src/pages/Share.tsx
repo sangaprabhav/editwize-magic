@@ -8,13 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Video, getMockVideos } from '@/types';
-import { ArrowLeft, Copy, Facebook, Twitter, Instagram } from 'lucide-react';
+import { ArrowLeft, Copy, Facebook, Twitter, Instagram, Mail, Download } from 'lucide-react';
+import { showShareNotification } from '@/utils/notifications';
 
 const Share = () => {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const [video, setVideo] = useState<Video | null>(null);
   const [videoLink, setVideoLink] = useState<string>('');
+  const [embedCode, setEmbedCode] = useState<string>('');
+  const [shareStatus, setShareStatus] = useState<{
+    platform: string;
+    status: 'idle' | 'sharing' | 'success' | 'error';
+  }>({ platform: '', status: 'idle' });
   
   useEffect(() => {
     if (id) {
@@ -24,9 +30,11 @@ const Share = () => {
       if (foundVideo) {
         setVideo(foundVideo);
         
-        // Generate a shareable link (in a real app, this would be a real URL)
+        // Generate a shareable link and embed code (in a real app, this would be a real URL)
         const baseUrl = window.location.origin;
-        setVideoLink(`${baseUrl}/share/${foundVideo.id}`);
+        const videoUrl = `${baseUrl}/share/${foundVideo.id}`;
+        setVideoLink(videoUrl);
+        setEmbedCode(`<iframe width="560" height="315" src="${videoUrl}/embed" frameborder="0" allowfullscreen></iframe>`);
       }
     }
   }, [id]);
@@ -34,10 +42,7 @@ const Share = () => {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(videoLink)
       .then(() => {
-        toast({
-          title: "Link copied",
-          description: "Share link has been copied to clipboard",
-        });
+        showShareNotification();
       })
       .catch(() => {
         toast({
@@ -48,11 +53,60 @@ const Share = () => {
       });
   };
   
+  const handleCopyEmbed = () => {
+    navigator.clipboard.writeText(embedCode)
+      .then(() => {
+        toast({
+          title: "Embed code copied",
+          description: "You can now paste it into your website",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Failed to copy",
+          description: "Please try copying the embed code manually",
+          variant: "destructive",
+        });
+      });
+  };
+  
   const handleShareOnSocial = (platform: string) => {
     // In a real app, this would integrate with social media APIs
+    setShareStatus({ platform, status: 'sharing' });
+    
+    // Simulate API call
+    setTimeout(() => {
+      setShareStatus({ platform, status: 'success' });
+      
+      toast({
+        title: `Shared on ${platform}`,
+        description: `Your video has been shared on ${platform}`,
+      });
+      
+      // Reset status after a delay
+      setTimeout(() => {
+        setShareStatus({ platform: '', status: 'idle' });
+      }, 2000);
+    }, 1500);
+  };
+  
+  const handleDownload = () => {
+    if (!video) return;
+    
+    // In a real app, this would trigger a download
+    const videoSrc = video.editedVideoFile || video.originalVideoFile;
+    
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = videoSrc;
+    link.download = `${video.videoTitle.replace(/\s+/g, '_')}.mp4`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
     toast({
-      title: `Share on ${platform}`,
-      description: "This feature would share to social media in a real app",
+      title: "Download started",
+      description: "Your video download has started",
     });
   };
   
@@ -62,8 +116,13 @@ const Share = () => {
         <Header />
         <main className="container mx-auto px-4 pt-24 pb-16 text-center">
           <h1 className="text-3xl font-bold mb-6">Video Not Found</h1>
-          <Link to="/library" className="text-primary hover:underline">
-            Return to My Videos
+          <p className="text-muted-foreground mb-8">
+            The video you're looking for doesn't exist or has been removed.
+          </p>
+          <Link to="/library">
+            <Button>
+              Return to My Videos
+            </Button>
           </Link>
         </main>
       </div>
@@ -100,6 +159,7 @@ const Share = () => {
               <VideoPreview
                 src={video.editedVideoFile || video.originalVideoFile}
                 title={video.videoTitle}
+                onShare={() => handleCopyLink()}
               />
             </div>
           </AnimatedTransition>
@@ -115,7 +175,7 @@ const Share = () => {
                     Video Link
                   </label>
                   <div className="flex items-center gap-2">
-                    <Input value={videoLink} readOnly />
+                    <Input value={videoLink} readOnly className="font-mono text-xs" />
                     <Button variant="secondary" onClick={handleCopyLink}>
                       <Copy size={16} />
                     </Button>
@@ -124,32 +184,86 @@ const Share = () => {
                 
                 <div>
                   <label className="text-sm font-medium mb-2 block">
-                    Share on Social Media
+                    Embed Code
                   </label>
                   <div className="flex items-center gap-2">
+                    <Input value={embedCode} readOnly className="font-mono text-xs" />
+                    <Button variant="secondary" onClick={handleCopyEmbed}>
+                      <Copy size={16} />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Copy this code to embed the video in your website
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Share on Social Media
+                  </label>
+                  <div className="grid grid-cols-3 gap-2 mb-3">
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
+                      className="w-full" 
                       onClick={() => handleShareOnSocial('Facebook')}
+                      disabled={shareStatus.status === 'sharing'}
                     >
-                      <Facebook size={16} className="mr-2" />
+                      {shareStatus.platform === 'Facebook' && shareStatus.status === 'sharing' ? (
+                        <span className="animate-spin mr-2">⟳</span>
+                      ) : (
+                        <Facebook size={16} className="mr-2" />
+                      )}
                       Facebook
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
+                      className="w-full" 
                       onClick={() => handleShareOnSocial('Twitter')}
+                      disabled={shareStatus.status === 'sharing'}
                     >
-                      <Twitter size={16} className="mr-2" />
+                      {shareStatus.platform === 'Twitter' && shareStatus.status === 'sharing' ? (
+                        <span className="animate-spin mr-2">⟳</span>
+                      ) : (
+                        <Twitter size={16} className="mr-2" />
+                      )}
                       Twitter
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="flex-1" 
+                      className="w-full" 
                       onClick={() => handleShareOnSocial('Instagram')}
+                      disabled={shareStatus.status === 'sharing'}
                     >
-                      <Instagram size={16} className="mr-2" />
+                      {shareStatus.platform === 'Instagram' && shareStatus.status === 'sharing' ? (
+                        <span className="animate-spin mr-2">⟳</span>
+                      ) : (
+                        <Instagram size={16} className="mr-2" />
+                      )}
                       Instagram
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={() => handleShareOnSocial('Email')}
+                      disabled={shareStatus.status === 'sharing'}
+                    >
+                      {shareStatus.platform === 'Email' && shareStatus.status === 'sharing' ? (
+                        <span className="animate-spin mr-2">⟳</span>
+                      ) : (
+                        <Mail size={16} className="mr-2" />
+                      )}
+                      Email
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={handleDownload}
+                    >
+                      <Download size={16} className="mr-2" />
+                      Download
                     </Button>
                   </div>
                 </div>

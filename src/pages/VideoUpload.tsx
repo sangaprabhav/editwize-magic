@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import AnimatedTransition from '@/components/AnimatedTransition';
 import VideoUploader from '@/components/VideoUploader';
 import VideoRecorder from '@/components/VideoRecorder';
+import VideoProgress from '@/components/VideoProgress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -17,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Video } from '@/types';
+import { showUploadNotification } from '@/utils/notifications';
 
 // Form validation schema
 const formSchema = z.object({
@@ -35,6 +37,8 @@ const VideoUpload = () => {
   const [uploadedVideo, setUploadedVideo] = useState<File | null>(null);
   const [recordedVideo, setRecordedVideo] = useState<Blob | null>(null);
   const [videoSource, setVideoSource] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -51,7 +55,7 @@ const VideoUpload = () => {
     setVideoSource(url);
     
     toast({
-      title: "Video uploaded",
+      title: "Video ready",
       description: "Now add a title and description",
     });
   };
@@ -63,9 +67,27 @@ const VideoUpload = () => {
     setVideoSource(url);
     
     toast({
-      title: "Video recorded",
+      title: "Recording ready",
       description: "Now add a title and description",
     });
+  };
+  
+  // Simulate upload progress
+  const simulateUploadProgress = () => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    const interval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 300);
+    
+    return () => clearInterval(interval);
   };
   
   // Handle form submission
@@ -79,6 +101,9 @@ const VideoUpload = () => {
       return;
     }
     
+    // Start the upload progress simulation
+    const clearProgressInterval = simulateUploadProgress();
+    
     // Create a new video object
     const newVideo: Video = {
       id: `vid_${Date.now()}`,
@@ -90,17 +115,19 @@ const VideoUpload = () => {
       status: 'Uploaded',
     };
     
-    // In a real app, save to database
-    // For now, just navigate to the editor
-    toast({
-      title: "Video saved",
-      description: "Taking you to the editor",
-    });
-    
-    // Navigate to the editor with the new video ID
+    // Simulate uploading process
     setTimeout(() => {
-      navigate(`/editor/${newVideo.id}`);
-    }, 1000);
+      clearProgressInterval();
+      
+      // Show upload notification
+      showUploadNotification(values.videoTitle);
+      
+      // Navigate to the editor with the new video ID
+      setTimeout(() => {
+        setIsUploading(false);
+        navigate(`/editor/${newVideo.id}`);
+      }, 500);
+    }, 3000);
   };
   
   return (
@@ -112,95 +139,107 @@ const VideoUpload = () => {
           <h1 className="text-3xl font-bold mb-6">Upload New Video</h1>
         </AnimatedTransition>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Upload/Record */}
-          <AnimatedTransition delay={200} className="lg:col-span-1">
-            <div className="glass-card p-6 mb-6">
-              <h2 className="text-xl font-medium mb-4">Video Source</h2>
-              
-              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="w-full mb-4">
-                  <TabsTrigger value="upload" className="w-full">
-                    <Upload size={16} className="mr-2" />
-                    Upload
-                  </TabsTrigger>
-                  <TabsTrigger value="record" className="w-full">
-                    <Camera size={16} className="mr-2" />
-                    Record
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="upload" className="mt-0">
-                  <VideoUploader onVideoSelect={handleVideoUpload} />
-                </TabsContent>
-                
-                <TabsContent value="record" className="mt-0">
-                  <VideoRecorder onVideoRecord={handleVideoRecord} maxDuration={60} />
-                </TabsContent>
-              </Tabs>
+        {isUploading ? (
+          <AnimatedTransition delay={200}>
+            <div className="max-w-2xl mx-auto">
+              <VideoProgress 
+                status="Uploading" 
+                progress={uploadProgress}
+                message="Uploading your video to the server..."
+              />
             </div>
           </AnimatedTransition>
-          
-          {/* Right Column - Metadata Form */}
-          <AnimatedTransition delay={300} className="lg:col-span-2">
-            <div className="glass-card p-6">
-              <h2 className="text-xl font-medium mb-4">Video Details</h2>
-              
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="videoTitle"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Video title" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Upload/Record */}
+            <AnimatedTransition delay={200} className="lg:col-span-1">
+              <div className="glass-card p-6 mb-6">
+                <h2 className="text-xl font-medium mb-4">Video Source</h2>
+                
+                <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="w-full mb-4">
+                    <TabsTrigger value="upload" className="w-full">
+                      <Upload size={16} className="mr-2" />
+                      Upload
+                    </TabsTrigger>
+                    <TabsTrigger value="record" className="w-full">
+                      <Camera size={16} className="mr-2" />
+                      Record
+                    </TabsTrigger>
+                  </TabsList>
                   
-                  <FormField
-                    control={form.control}
-                    name="videoDescription"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description (optional)</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enter a brief description of your video" 
-                            className="min-h-[100px]"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <TabsContent value="upload" className="mt-0">
+                    <VideoUploader onVideoSelect={handleVideoUpload} />
+                  </TabsContent>
                   
-                  <div className="pt-4">
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      disabled={!videoSource}
-                    >
-                      <ArrowUp className="mr-2" />
-                      Save and Continue to Editor
-                    </Button>
+                  <TabsContent value="record" className="mt-0">
+                    <VideoRecorder onVideoRecord={handleVideoRecord} maxDuration={60} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </AnimatedTransition>
+            
+            {/* Right Column - Metadata Form */}
+            <AnimatedTransition delay={300} className="lg:col-span-2">
+              <div className="glass-card p-6">
+                <h2 className="text-xl font-medium mb-4">Video Details</h2>
+                
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="videoTitle"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Video title" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
-                    {!videoSource && (
-                      <p className="text-sm text-muted-foreground text-center mt-2">
-                        Please upload or record a video first
-                      </p>
-                    )}
-                  </div>
-                </form>
-              </Form>
-            </div>
-          </AnimatedTransition>
-        </div>
+                    <FormField
+                      control={form.control}
+                      name="videoDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description (optional)</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Enter a brief description of your video" 
+                              className="min-h-[100px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="pt-4">
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={!videoSource}
+                      >
+                        <ArrowUp className="mr-2" />
+                        Save and Continue to Editor
+                      </Button>
+                      
+                      {!videoSource && (
+                        <p className="text-sm text-muted-foreground text-center mt-2">
+                          Please upload or record a video first
+                        </p>
+                      )}
+                    </div>
+                  </form>
+                </Form>
+              </div>
+            </AnimatedTransition>
+          </div>
+        )}
       </main>
     </div>
   );
