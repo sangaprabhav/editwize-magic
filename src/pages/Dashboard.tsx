@@ -5,45 +5,16 @@ import { useAuth } from '@/lib/authContext';
 import Header from '@/components/Header';
 import AnimatedTransition from '@/components/AnimatedTransition';
 import { Plus, Film, Clock, Image, Play, MoreVertical } from 'lucide-react';
-
-// Mock data for videos
-const mockVideos = [
-  {
-    id: '1',
-    title: 'Beach Sunset',
-    thumbnail: 'https://i.pravatar.cc/300?img=1',
-    duration: 122, // in seconds
-    date: new Date(2023, 6, 15),
-    status: 'completed',
-  },
-  {
-    id: '2',
-    title: 'Mountain Hike',
-    thumbnail: 'https://i.pravatar.cc/300?img=2',
-    duration: 45,
-    date: new Date(2023, 6, 10),
-    status: 'completed',
-  },
-  {
-    id: '3',
-    title: 'City Timelapse',
-    thumbnail: 'https://i.pravatar.cc/300?img=3',
-    duration: 67,
-    date: new Date(2023, 6, 5),
-    status: 'completed',
-  },
-];
+import { Video, getMockVideos, formatDate, formatDuration } from '@/types';
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
-  const [recentVideos, setRecentVideos] = useState(mockVideos);
+  const [recentVideos, setRecentVideos] = useState<Video[]>([]);
   
-  // Format time in MM:SS format
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  useEffect(() => {
+    // Load mock videos data
+    setRecentVideos(getMockVideos());
+  }, []);
   
   return (
     <div className="min-h-screen bg-background">
@@ -117,45 +88,27 @@ const Dashboard = () => {
 
 // Video card component
 interface VideoCardProps {
-  video: {
-    id: string;
-    title: string;
-    thumbnail: string;
-    duration: number;
-    date: Date;
-    status: string;
-  };
+  video: Video;
   index: number;
 }
 
 const VideoCard: React.FC<VideoCardProps> = ({ video, index }) => {
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    }).format(date);
-  };
-  
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // Assuming all videos have a duration of 60 seconds for mock data
+  const mockDuration = 60;
   
   return (
     <AnimatedTransition delay={400 + index * 100}>
       <div className="bg-card rounded-xl overflow-hidden border border-border/50 hover:shadow-lg transition-shadow">
         <div className="relative aspect-video bg-black">
           <img 
-            src={video.thumbnail} 
-            alt={video.title}
+            src={video.originalVideoFile} 
+            alt={video.videoTitle}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
             <div className="flex items-center gap-2 text-white text-sm">
               <Clock size={14} />
-              <span>{formatDuration(video.duration)}</span>
+              <span>{formatDuration(mockDuration)}</span>
             </div>
           </div>
           <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/30 transition-opacity">
@@ -170,12 +123,12 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, index }) => {
         <div className="p-4">
           <Link to={`/editor/${video.id}`} className="block">
             <h3 className="font-medium text-foreground truncate mb-1 hover:text-primary transition-colors">
-              {video.title}
+              {video.videoTitle}
             </h3>
           </Link>
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              {formatDate(video.date)}
+              {formatDate(video.createdDate)}
             </span>
             <button className="text-muted-foreground hover:text-foreground transition-colors">
               <MoreVertical size={16} />

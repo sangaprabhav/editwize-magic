@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import VideoUploader from '@/components/VideoUploader';
 import VideoRecorder from '@/components/VideoRecorder';
@@ -10,9 +10,11 @@ import AnimatedTransition from '@/components/AnimatedTransition';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Camera, Upload, Save, Loader2, Share2 } from 'lucide-react';
+import { Video, EditRequest, EditRequestStatus, getMockVideos } from '@/types';
 
 const VideoEditor = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   
   // State
@@ -24,6 +26,23 @@ const VideoEditor = () => {
   const [promptHistory, setPromptHistory] = useState<Array<{ prompt: string; timestamp: Date }>>([]);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processedVideo, setProcessedVideo] = useState<string | null>(null);
+  const [currentVideo, setCurrentVideo] = useState<Video | null>(null);
+  const [editRequests, setEditRequests] = useState<EditRequest[]>([]);
+  
+  // Load video if ID is provided
+  useEffect(() => {
+    if (id) {
+      const videos = getMockVideos();
+      const video = videos.find(v => v.id === id);
+      if (video) {
+        setCurrentVideo(video);
+        setVideoSource(video.originalVideoFile);
+        if (video.editedVideoFile) {
+          setProcessedVideo(video.editedVideoFile);
+        }
+      }
+    }
+  }, [id]);
   
   // Handle video upload
   const handleVideoUpload = (file: File) => {
@@ -54,6 +73,18 @@ const VideoEditor = () => {
     setPrompt(promptText);
     setPromptHistory(prev => [...prev, { prompt: promptText, timestamp: new Date() }]);
     
+    // Create a new edit request
+    const newEditRequest: EditRequest = {
+      id: `edit_${Date.now()}`,
+      videoId: currentVideo?.id || 'new_video',
+      userId: 'user1', // In a real app, this would be the current user's ID
+      promptText,
+      createdDate: new Date(),
+      status: 'In Progress',
+    };
+    
+    setEditRequests(prev => [...prev, newEditRequest]);
+    
     // Simulate AI processing
     setIsProcessing(true);
     
@@ -64,11 +95,29 @@ const VideoEditor = () => {
       // For demo purposes, we'll just use the original video
       setProcessedVideo(videoSource);
       
+      // Update the edit request status
+      setEditRequests(prev => 
+        prev.map(req => 
+          req.id === newEditRequest.id 
+            ? { ...req, status: 'Completed' as EditRequestStatus, responseJSON: JSON.stringify({ effect: 'applied', timestamp: new Date() }) } 
+            : req
+        )
+      );
+      
       toast({
         title: "Edit complete",
         description: "Your video has been processed with AI",
       });
     } catch (error) {
+      // Update the edit request status to error
+      setEditRequests(prev => 
+        prev.map(req => 
+          req.id === newEditRequest.id 
+            ? { ...req, status: 'Error' as EditRequestStatus } 
+            : req
+        )
+      );
+      
       toast({
         title: "Processing failed",
         description: "There was an error processing your video",
@@ -109,14 +158,14 @@ const VideoEditor = () => {
   // Cleanup URLs on unmount
   useEffect(() => {
     return () => {
-      if (videoSource) {
+      if (videoSource && !currentVideo) {
         URL.revokeObjectURL(videoSource);
       }
-      if (processedVideo && processedVideo !== videoSource) {
+      if (processedVideo && processedVideo !== videoSource && !currentVideo?.editedVideoFile) {
         URL.revokeObjectURL(processedVideo);
       }
     };
-  }, [videoSource, processedVideo]);
+  }, [videoSource, processedVideo, currentVideo]);
   
   return (
     <div className="min-h-screen bg-background">
@@ -124,7 +173,9 @@ const VideoEditor = () => {
       
       <main className="container mx-auto px-4 pt-24 pb-16">
         <AnimatedTransition delay={100}>
-          <h1 className="text-3xl font-bold mb-6">AI Video Editor</h1>
+          <h1 className="text-3xl font-bold mb-6">
+            {currentVideo ? `Editing: ${currentVideo.videoTitle}` : 'AI Video Editor'}
+          </h1>
         </AnimatedTransition>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -133,26 +184,34 @@ const VideoEditor = () => {
             <div className="glass-card p-6 mb-6">
               <h2 className="text-xl font-medium mb-4">Video Source</h2>
               
-              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="w-full mb-4">
-                  <TabsTrigger value="upload" className="w-full">
-                    <Upload size={16} className="mr-2" />
-                    Upload
-                  </TabsTrigger>
-                  <TabsTrigger value="record" className="w-full">
-                    <Camera size={16} className="mr-2" />
-                    Record
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="upload" className="mt-0">
-                  <VideoUploader onVideoSelect={handleVideoUpload} />
-                </TabsContent>
-                
-                <TabsContent value="record" className="mt-0">
-                  <VideoRecorder onVideoRecord={handleVideoRecord} maxDuration={60} />
-                </TabsContent>
-              </Tabs>
+              {!currentVideo ? (
+                <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="w-full mb-4">
+                    <TabsTrigger value="upload" className="w-full">
+                      <Upload size={16} className="mr-2" />
+                      Upload
+                    </TabsTrigger>
+                    <TabsTrigger value="record" className="w-full">
+                      <Camera size={16} className="mr-2" />
+                      Record
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="upload" className="mt-0">
+                    <VideoUploader onVideoSelect={handleVideoUpload} />
+                  </TabsContent>
+                  
+                  <TabsContent value="record" className="mt-0">
+                    <VideoRecorder onVideoRecord={handleVideoRecord} maxDuration={60} />
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <div className="text-center p-4 bg-secondary/20 rounded-lg">
+                  <p className="text-muted-foreground">
+                    Editing existing video: <strong>{currentVideo.videoTitle}</strong>
+                  </p>
+                </div>
+              )}
             </div>
             
             {/* AI Prompt Section */}
@@ -241,6 +300,31 @@ const VideoEditor = () => {
                     <li>Our AI will process your request and generate the edited video</li>
                     <li>You can continue refining with additional prompts</li>
                   </ol>
+                </div>
+              )}
+              
+              {editRequests.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium mb-2">Edit History</h3>
+                  <div className="space-y-2">
+                    {editRequests.map((request) => (
+                      <div key={request.id} className="p-3 bg-card border border-border/50 rounded-lg">
+                        <div className="flex justify-between">
+                          <p className="text-sm font-medium">{request.promptText}</p>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            request.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                            request.status === 'Error' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {request.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(request.createdDate).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
